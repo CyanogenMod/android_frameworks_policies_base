@@ -476,6 +476,15 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     }
 
     /**
+     * Quick Keys for Vision (HTC - G2)
+     */
+    Runnable mQuickKey1Press = new Runnable(){
+        public void run() {
+            
+        }
+    };
+
+    /**
      * When a home-key longpress expires, close other system windows and launch the recent apps
      */
     Runnable mHomeLongPress = new Runnable() {
@@ -1300,7 +1309,112 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 }
             }
         }
-        
+
+        /**
+         * Quick Keys for Vision (HTC - G2)
+         */
+        if (code == KeyEvent.KEYCODE_USER1) {
+            WindowManager.LayoutParams attrs = win != null ? win.getAttrs() : null;
+            if (attrs != null) {
+                final int type = attrs.type;
+                if (type == WindowManager.LayoutParams.TYPE_KEYGUARD
+                        || type == WindowManager.LayoutParams.TYPE_KEYGUARD_DIALOG) {
+                    // the "app" is keyguard, so give it the key
+                    return false;
+                }
+                if (down) {
+                    if (!keyguardOn) {
+                        String appUri = Settings.System.getString(mContext.getContentResolver(), Settings.System.USER_DEFINED_KEY1_APP);
+                        if (appUri != null){
+                            try{
+                                Intent qkIntent = Intent.parseUri(appUri, 0);
+                                qkIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                                mContext.startActivity(qkIntent);
+                            }catch (URISyntaxException e){
+                                // TODO: Toast Message
+                            }catch (ActivityNotFoundException e){
+                                // TODO: Toast Message
+                            }
+                        }else{
+                            // TODO: Open CMParts
+                        }
+                        // TODO: Add long press shortcut?
+                        //mHandler.postDelayed(mHomeLongPress, ViewConfiguration.getGlobalActionKeyTimeout());
+                    }
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        if (code == KeyEvent.KEYCODE_USER2) {
+            WindowManager.LayoutParams attrs = win != null ? win.getAttrs() : null;
+            if (attrs != null) {
+                final int type = attrs.type;
+                if (type == WindowManager.LayoutParams.TYPE_KEYGUARD
+                        || type == WindowManager.LayoutParams.TYPE_KEYGUARD_DIALOG) {
+                    // the "app" is keyguard, so give it the key
+                    return false;
+                }
+                if (down) {
+                    if (!keyguardOn) {
+                        String appUri = Settings.System.getString(mContext.getContentResolver(), Settings.System.USER_DEFINED_KEY2_APP);
+                        if (appUri != null){
+                            try{
+                                Intent qkIntent = Intent.parseUri(appUri, 0);
+                                qkIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                                mContext.startActivity(qkIntent);
+                            }catch (URISyntaxException e){
+                                // TODO: Toast Message
+                            }catch (ActivityNotFoundException e){
+                                // TODO: Toast Message
+                            }
+                        }else{
+                            // TODO: Open CMParts
+                        }
+                        // TODO: Add long press shortcut?
+                        //mHandler.postDelayed(mHomeLongPress, ViewConfiguration.getGlobalActionKeyTimeout());
+                    }
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        if (code == KeyEvent.KEYCODE_USER3) {
+            WindowManager.LayoutParams attrs = win != null ? win.getAttrs() : null;
+            if (attrs != null) {
+                final int type = attrs.type;
+                if (type == WindowManager.LayoutParams.TYPE_KEYGUARD
+                        || type == WindowManager.LayoutParams.TYPE_KEYGUARD_DIALOG) {
+                    // the "app" is keyguard, so give it the key
+                    return false;
+                }
+                if (down) {
+                    if (!keyguardOn) {
+                        String appUri = Settings.System.getString(mContext.getContentResolver(), Settings.System.USER_DEFINED_KEY3_APP);
+                        if (appUri != null){
+                            try{
+                                Intent qkIntent = Intent.parseUri(appUri, 0);
+                                qkIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                                mContext.startActivity(qkIntent);
+                            }catch (URISyntaxException e){
+                                // TODO: Toast Message
+                            }catch (ActivityNotFoundException e){
+                                // TODO: Toast Message
+                            }
+                        }else{
+                            // TODO: Open CMParts
+                        }
+                        // TODO: Add long press shortcut?
+                        //mHandler.postDelayed(mHomeLongPress, ViewConfiguration.getGlobalActionKeyTimeout());
+                    }
+                    return true;
+                }
+            }
+            return false;
+        }
+
         // Shortcuts are invoked through Search+key, so intercept those here
         if (mSearchKeyPressed) {
             if (down && repeatCount == 0 && !keyguardOn) {

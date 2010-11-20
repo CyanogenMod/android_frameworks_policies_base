@@ -354,7 +354,7 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
                     getContext().startActivity(callIntent);
                     mCallback.goToUnlockScreen();
                 } else if (whichHandle == SlidingTab.OnTriggerListener.RIGHT_HANDLE){
-                    Intent sendIntent = new Intent(Intent.ACTION_MAIN);
+                    Intent sendIntent = new Intent(Intent.ACTION_SEND);
                     sendIntent.setType("vnd.android-dir/mms-sms");
                     sendIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     getContext().startActivity(sendIntent);

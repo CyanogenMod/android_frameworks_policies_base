@@ -22,6 +22,7 @@ import com.android.internal.widget.LockPatternUtils;
 import com.android.internal.widget.SlidingTab;
 import com.android.internal.widget.SlidingTab.OnTriggerListener;
 
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -39,7 +40,14 @@ import android.util.Log;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.provider.Settings;
+import android.gesture.Gesture;
+import android.gesture.GestureLibraries;
+import android.gesture.GestureLibrary;
+import android.gesture.GestureOverlayView;
+import android.gesture.Prediction;
+import android.gesture.GestureOverlayView.OnGesturePerformedListener;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.io.File;
 
@@ -49,7 +57,7 @@ import java.io.File;
  * past it, as applicable.
  */
 class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateMonitor.InfoCallback,
-        KeyguardUpdateMonitor.SimStateCallback, SlidingTab.OnTriggerListener {
+        KeyguardUpdateMonitor.SimStateCallback, SlidingTab.OnTriggerListener, OnGesturePerformedListener {
 
     private static final boolean DBG = false;
     private static final String TAG = "LockScreen";
@@ -78,6 +86,7 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
     private AudioManager am = (AudioManager)getContext().getSystemService(Context.AUDIO_SERVICE);
     private boolean mWasMusicActive = am.isMusicActive();
     private boolean mIsMusicActive = false;
+    private GestureLibrary mLibrary;
 
     private TextView mCustomMsg;
 
@@ -314,6 +323,10 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
                 sendMediaButtonEvent(KeyEvent.KEYCODE_MEDIA_NEXT);
              }
         });
+        mLibrary = GestureLibraries.fromRawResource(mContext, R.raw.lockscreen_gestures);
+        if (!mLibrary.load()) Log.d("MIKE","____________________PROBLEM LOADING GESTURE LIBRARY_____________");
+        GestureOverlayView gestures = (GestureOverlayView) findViewById(R.id.gestures);
+        gestures.addOnGesturePerformedListener(this);
 
 
         setFocusable(true);
@@ -858,5 +871,43 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
 
     public void onPhoneStateChanged(String newState) {
         mLockPatternUtils.updateEmergencyCallButtonState(mEmergencyCallButton);
+    }
+
+    @Override
+    public void onGesturePerformed(GestureOverlayView overlay, Gesture gesture) {
+        Log.d("MIKE","____________________on gesture performed");
+        ArrayList<Prediction> predictions = mLibrary.recognize(gesture);
+        Log.d("MIKE"," predictions size= " + Integer.toString(predictions.size()));
+        if (predictions.size() > 0) Log.d("MIKE"," score = "+ Double.toString(predictions.get(0).score));
+        if (predictions.size() > 0 && predictions.get(0).score > 1.0) {
+            Log.d("MIKE","____________________got a good read");
+            Intent launchIntent = new Intent(Intent.ACTION_MAIN);
+            launchIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            String action = predictions.get(0).name;
+            if ("talk".equals(action)) {
+                launchIntent.setComponent(new ComponentName("com.google.android.talk",
+                        "com.google.android.talk.SigningInActivity"));
+            } else if ("sms".equals(action)) {
+                launchIntent.setComponent(new ComponentName("com.android.mms",
+                        "com.android.mms.ui.ConversationList"));
+            } else if ("gmail".equals(action)) {
+                launchIntent.setComponent(new ComponentName("com.google.android.gm",
+                        "com.google.android.gm.ConversationListActivityGmail"));
+            } else if ("phone".equals(action)) {
+                launchIntent.setComponent(new ComponentName("com.android.contacts",
+                        "com.android.contacts.DialtactsActivity"));
+            } else if ("voice".equals(action)) {
+                launchIntent.setComponent(new ComponentName("com.google.android.apps.googlevoice",
+                        "com.google.android.apps.googlevoice.SplashActivity"));
+            } else if ("email".equals(action)) {
+                launchIntent.setComponent(new ComponentName("com.android.email",
+                        "com.android.email.activity.Welcome"));
+            } else {
+                return;
+            }
+            mContext.startActivity(launchIntent);
+            mCallback.goToUnlockScreen();
+        }
     }
 }

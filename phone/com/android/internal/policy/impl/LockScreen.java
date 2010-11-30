@@ -38,6 +38,7 @@ import android.view.ViewGroup;
 import android.widget.*;
 import android.graphics.drawable.Drawable;
 import android.util.Log;
+import android.os.Build;
 import android.os.Environment;
 import android.os.SystemClock;
 import android.os.SystemProperties;
@@ -50,8 +51,15 @@ import android.gesture.Prediction;
 import android.gesture.GestureOverlayView.OnGesturePerformedListener;
 
 import java.util.ArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 import java.util.Date;
+import java.lang.Thread;
+import java.lang.Runnable;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.net.URISyntaxException;
 
 /**
@@ -134,6 +142,27 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
     private boolean mGestureTrail;
     private boolean mGestureActive;
     private boolean mHideUnlockTab;
+
+    private static int currentFlashlightMode;
+    private static FileWriter mWriter;
+
+    private static ExecutorService threadExecutor;
+    private static boolean runTimer = false;
+
+    private static final int MODE_DEFAULT = 0;
+    private static final int MODE_HIGH = 1;
+    private static boolean useDeathRay = !Build.DEVICE.equals("supersonic");;
+
+    private static final String FLASHLIGHT_FILE;
+    private static final String FLASHLIGHT_FILE_SPOTLIGHT = "/sys/class/leds/spotlight/brightness";
+    static {
+        File ff = new File(FLASHLIGHT_FILE_SPOTLIGHT);
+        if (ff.exists()) {
+            FLASHLIGHT_FILE = FLASHLIGHT_FILE_SPOTLIGHT;
+        } else {
+            FLASHLIGHT_FILE = "/sys/class/leds/flashlight/brightness";
+        }
+    }
 
     /**
      * The status of this lock screen.
@@ -939,6 +968,73 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
         }
     }
 
+    public void toggleFlashlightState() {
+        currentFlashlightMode = Settings.System.getInt(getContext().getContentResolver(), Settings.System.EXPANDED_FLASH_MODE,
+                    MODE_DEFAULT);
+        boolean enabled = getFlashlightEnabled();
+        runTimer = !enabled;
+        setFlashlightEnabled(!enabled);
+    }
+
+    public boolean getFlashlightEnabled() {
+        try {
+            FileInputStream fis = new FileInputStream(FLASHLIGHT_FILE);
+            int result = fis.read();
+            fis.close();
+            return (result != '0');
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public void setFlashlightEnabled(boolean on) {
+        try {
+            if (mWriter == null) {
+                mWriter = new FileWriter(FLASHLIGHT_FILE);
+            }
+            int value = 0;
+            if (on) {
+                switch (currentFlashlightMode) {
+                    case MODE_HIGH:
+                        value = useDeathRay ? 3 : 128;
+                        break;
+                    default:
+                        value = 1;
+                        break;
+                }
+            }
+            mWriter.write(String.valueOf(value));
+            mWriter.flush();
+            if (!on) {
+                mWriter.close();
+                mWriter = null;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "setFlashlightEnabled failed", e);
+        }
+        startTimer(on);
+    }
+
+    private void startTimer(boolean on) {
+        if (!on) return;
+        if (threadExecutor == null) threadExecutor = Executors.newSingleThreadExecutor();
+
+        flashTimer timerRun = new flashTimer();
+        threadExecutor.execute(timerRun);
+    }
+
+    public class flashTimer implements Runnable {
+        public flashTimer() {
+        }
+        public void run() {
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+            }
+            setFlashlightEnabled(runTimer);
+        }
+    }
+
     @Override
     public void onGesturePerformed(GestureOverlayView overlay, Gesture gesture) {
         ArrayList<Prediction> predictions = mLibrary.recognize(gesture);
@@ -950,6 +1046,9 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
                     mCallback.goToUnlockScreen();
                 } else if ("SOUND".equals(uri)) {
                     toggleSilentMode();
+                    mCallback.pokeWakelock();
+                } else if ("FLASHLIGHT".equals(uri)) {
+                    toggleFlashlightState();
                     mCallback.pokeWakelock();
                 } else try {
                     Intent i = Intent.parseUri(uri, 0);

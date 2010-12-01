@@ -925,9 +925,17 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
     }
 
     public void toggleSilentMode() {
-        mSilentMode = !mSilentMode;
+        // tri state silent/vibrate/ring if silent mode is enabled, otherwise toggle silent mode
+
+        final boolean mVolumeControlSilent = Settings.System.getInt(mContext.getContentResolver(),
+            Settings.System.VOLUME_CONTROL_SILENT, 0) != 0;
+        mSilentMode = mVolumeControlSilent
+            ? ((mAudioManager.getRingerMode() == AudioManager.RINGER_MODE_VIBRATE) || !mSilentMode)
+            : !mSilentMode;
         if (mSilentMode) {
-            final boolean vibe = (Settings.System.getInt(
+            final boolean vibe = mVolumeControlSilent
+                ? (mAudioManager.getRingerMode() != AudioManager.RINGER_MODE_VIBRATE)
+                : (Settings.System.getInt(
                 getContext().getContentResolver(),
                 Settings.System.VIBRATE_IN_SILENT, 1) == 1);
 

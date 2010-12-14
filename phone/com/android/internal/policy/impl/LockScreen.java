@@ -265,10 +265,19 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
             }
         }
 
-        mPlayIcon = (ImageButton) findViewById(R.id.musicControlPlay);
-        mPauseIcon = (ImageButton) findViewById(R.id.musicControlPause); 
-        mRewindIcon = (ImageButton) findViewById(R.id.musicControlPrevious);
-        mForwardIcon = (ImageButton) findViewById(R.id.musicControlNext);
+            boolean useCustomExp = Settings.System.getInt(mContext.getContentResolver(),
+            Settings.System.NOTIF_EXPANDED_BAR_CUSTOM, 0) == 1;
+        if (useCustomExp) {
+            mPlayIcon = (ImageButton) findViewById(R.id.musicControlPlaycust);
+            mPauseIcon = (ImageButton) findViewById(R.id.musicControlPausecust);
+            mRewindIcon = (ImageButton) findViewById(R.id.musicControlPreviouscust);
+            mForwardIcon = (ImageButton) findViewById(R.id.musicControlNextcust);
+        } else {
+            mPlayIcon = (ImageButton) findViewById(R.id.musicControlPlay);
+            mPauseIcon = (ImageButton) findViewById(R.id.musicControlPause);
+            mRewindIcon = (ImageButton) findViewById(R.id.musicControlPrevious);
+            mForwardIcon = (ImageButton) findViewById(R.id.musicControlNext);
+        }
 
         mScreenLocked = (TextView) findViewById(R.id.screenLocked);
         mSelector = (SlidingTab) findViewById(R.id.tab_selector);

@@ -265,8 +265,8 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
             }
         }
 
-            boolean useCustomExp = Settings.System.getInt(mContext.getContentResolver(),
-            Settings.System.NOTIF_EXPANDED_BAR_CUSTOM, 0) == 1;
+        boolean useCustomExp = (Settings.System.getInt(mContext.getContentResolver(),
+            Settings.System.NOTIF_EXPANDED_BAR_CUSTOM, 0) == 1);
         if (useCustomExp) {
             mPlayIcon = (ImageButton) findViewById(R.id.musicControlPlaycust);
             mPauseIcon = (ImageButton) findViewById(R.id.musicControlPausecust);
